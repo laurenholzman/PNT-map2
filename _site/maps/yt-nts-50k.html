@@ -1,0 +1,582 @@
+<!DOCTYPE html><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <title>Yukon Territory, National Topographic System, 1:50,000</title>
+    <link rel="stylesheet" href="/openindexmap-o-matic/assets/main.css">
+</head>
+<html lang="en-US">
+
+<body><header class="site-header">
+
+    <div class="wrapper"><a class="site-title" rel="author" href="/openindexmap-o-matic/">UBC Library Map Set Viewer</a><nav class="site-nav">
+          <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+          <label for="nav-trigger">
+            <span class="menu-icon">
+              <svg viewBox="0 0 18 15" width="18px" height="15px">
+                <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+              </svg>
+            </span>
+          </label>
+  
+          <div class="trigger"><a class="page-link" href="/openindexmap-o-matic/about.html">About</a><a class="page-link" href="/openindexmap-o-matic/tutorial.html">Tutorial</a></div>
+        </nav></div>
+  </header><main class="page-content">
+    <div class="wrapper">
+      <p>
+          <!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js"></script>
+    <!-- Import Turf Module - Needed to calculate bounding boxes -->
+    <script src='https://api.mapbox.com/mapbox.js/plugins/turf/v2.0.2/turf.min.js'></script>
+</head>
+
+<body>
+    <div style=" position: sticky;  padding-left:3%; top: 3%; left: 3%">
+        <div class="mapinfowrapper">
+            <span class="mapinfo">Scale 1:50,000</span>
+            <span class="mapinfo">Years 1915-2010</span>
+            <span class="mapinfo">995 map sheets</span>
+        </div>
+        <h1 class="page-heading">Yukon Territory, National Topographic System, 1:50,000</h1>
+    </div>
+    <div class="row" style="width: 120%; float: left; min-width: 90%;">
+        <div class="column" style="position: sticky; width: 40%; padding-left:3%; top: 15%; left: 3%">
+            <a href="http://resolve.library.ubc.ca/cgi-bin/catsearch?bid=6538787" class="buttonlink">More info</a>
+            <button id="zoomto" class="btn-control">Reset map</button>
+
+            <div class="mapcontainer" >
+                <div id="map"></div>
+            </div>
+        </div>
+        <div class="column" style="position: initial" >
+            <div class="featurecontainer">
+                <div id="features"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+	mapboxgl.accessToken = 'pk.eyJ1IjoidGhlaGVsbG9tYXJ0aWFuIiwiYSI6ImNsMDc1NXBuazF6bXczZXJzd2ZseXB4MDgifQ.gQNA94PswehVHrpv6cBBSw';
+
+// Location of the geojson
+// Specifying here allows for it to be more easily changed.
+// There is also an option where we could load .geojsons local storage if desired.
+const dPath = 'https://ubc-lib-geo.github.io/spatial-indexes/canada_yukonTerritory_50k_nts.geojson';
+
+// There isn't an explicit way to get the bounds of a geojson with GLJS
+//   - seems there should be?
+// This function allows us to:
+// Read any geojson from a URL
+async function mapData(){
+    //  fetch() retreives data from a URL
+    //   - Its an asynchronous command, returns a promise to retreive a value
+    //   - By keeping everything in the mapData() function, commands are applied the value not the promise
+    const data = await fetch(dPath, {
+                                headers: {
+                                'Accept': 'application/json'
+                                }
+                            });
+    //  Read geojson from the fetched value
+    const geoJson = await data.json();
+    //  Turf moddule allows us to get the bounding box of a geojson
+    var bbox = turf.extent(geoJson);
+    //  fit() will fit the map to the bounding box of our geojson
+    //  Called later after map is initialized
+    function fit() {
+                    map.fitBounds(bbox, {padding: 50});
+                    }
+
+    //  Create the map - zoom and center are arbitrary
+    const map = new mapboxgl.Map({
+                container: 'map',
+                zoom: 4,
+                center: [-125.193328, 50.506185],
+                style: 'mapbox://styles/mapbox/light-v11',
+                pitchWithRotate: false,
+                dragRotate: false,
+                touchZoomRotate: false,
+                 projection: {
+                     name: 'mercator'
+                    } 
+                });
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }));
+    //  Fit to bbox, overwrite the center/zoom
+    map.scrollZoom.disable();
+    fit();
+    //  On load - add geojson
+    map.on('load', function() {
+
+    //  Add the geojson as a map source
+        map.addSource('Data Layer', {
+        type: 'geojson',
+            data: geoJson,
+            generateId: true
+
+        });
+
+    //  Add the layer, reference the source to minimize redundancy
+        //fill opacity is based on a feature-state, hover, which is controlled by the position of the mouse
+    map.addLayer({
+                'id': 'Data Layer Values',
+                'type': 'fill',
+                'source': 'Data Layer',
+                'layout': {},
+                    'paint': {
+                        'fill-color': '#FF8484',
+                        'fill-opacity': [
+                            'case',
+                            ['boolean', ['feature-state', 'hover'], false],
+                            0.5,
+                            0
+                        ],
+                        'fill-outline-color': 'black',
+
+                    },
+                });
+
+
+    // skeleton outline of the grid
+    map.addLayer({
+                'id': 'Data Layer Frame',
+                'type': 'line',
+                'source': 'Data Layer',
+                'layout': {},
+                    'paint': {
+                        'line-color': 'maroon',
+                        'line-width': 2
+                    },
+                });
+
+
+
+    // Call fit when clicking the zoomto button
+    document.getElementById('zoomto').addEventListener('click', () => {
+        fit();
+        marker.remove();
+        document.getElementById('features').innerHTML = "";
+
+        //remove hightlight, if it exists
+        map.setFeatureState({
+            'source': 'Data Layer',
+            'id': ID
+
+        }, {
+            hover: false
+
+        });
+
+    });
+    });
+
+    // Create an empty marker
+    const marker = new mapboxgl.Marker();
+    // Function to add the marker
+    function add_marker (event) {
+        var coordinates = event.lngLat;
+        console.log('Lng:', coordinates.lng, 'Lat:', coordinates.lat);
+        marker.setLngLat(coordinates).addTo(map);
+        }
+
+    //define ID outside of scope of click function
+    var ID =null;
+    // Display desired attributes on click
+    map.on('click', (e) => {
+        // Add the marker (show where the click is)
+        add_marker(e);
+
+        //removes highlight if it dropdown was open before clicking a new location
+        map.setFeatureState({
+            'source': 'Data Layer',
+            'id': ID
+            
+        }, {
+            hover: false
+
+        });
+
+        // Get features at point click
+        const features = map.queryRenderedFeatures(e.point, {layers: ['Data Layer Values']});
+         // Limit the number of properties we're displaying for legibility and performance
+
+
+
+
+       //OIM names based on table pulled from OIM specifications; second array allows for searching 
+       const OIMnames= [
+            {
+                ELEMENT: "label",
+                USED_FOR: "Sheet/frame no."
+            },
+            {
+                ELEMENT: "labelAlt",
+                USED_FOR: "Alternate sheet/frame no."
+            },
+            {
+                ELEMENT: "labelAlt2",
+                USED_FOR: "Second alternate sheet/frame no."
+            },
+            {
+                ELEMENT: "datePub",
+                USED_FOR: "Publication date"
+            },
+            {
+                ELEMENT: "date",
+                USED_FOR: "Date"
+            },
+            {
+                ELEMENT: "west",
+                USED_FOR: "Westernmost longitude"
+            },
+            {
+                ELEMENT: "east",
+                USED_FOR: "Easternmost longitude"
+            },
+            {
+                ELEMENT: "north",
+                USED_FOR: "Northernmost latitude"
+            },
+            {
+                ELEMENT: "south",
+                USED_FOR: "Southernmost latitude"
+            },
+            {
+                ELEMENT: "location",
+                USED_FOR: "Location"
+            },
+            {
+                ELEMENT: "scale",
+                USED_FOR: "Scale"
+            },
+            {
+                ELEMENT: "color",
+                USED_FOR: "Color"
+            },
+            {
+                ELEMENT: "title",
+                USED_FOR: "Sheet name"
+            },
+            {
+                ELEMENT: "titleAlt",
+                USED_FOR: "Alternate sheet name"
+            },
+            {
+                ELEMENT: "dateSurvey",
+                USED_FOR: "Survey date"
+            },
+            {
+                ELEMENT: "datePhoto",
+                USED_FOR: "Photocorrected date"
+            },
+            {
+                ELEMENT: "dateReprnt",
+                USED_FOR: "Reprint date"
+            },
+            {
+                ELEMENT: "overprint",
+                USED_FOR: "Overprint"
+            },
+            {
+                ELEMENT: "edition",
+                USED_FOR: "Edition"
+            },
+            {
+                ELEMENT: "publisher",
+                USED_FOR: "Publisher"
+            },
+            {
+                ELEMENT: "overlays",
+                USED_FOR: "Overlays"
+            },
+            {
+                ELEMENT: "projection",
+                USED_FOR: "Projection"
+            },
+            {
+                ELEMENT: "lcCallNo",
+                USED_FOR: "LC Call Number"
+            },
+            {
+                ELEMENT: "contLines",
+                USED_FOR: "Contour lines"
+            },
+            {
+                ELEMENT: "contInterv",
+                USED_FOR: "Contour interval"
+            },
+            {
+                ELEMENT: "bathLines",
+                USED_FOR: "Bathymetric lines"
+            },
+            {
+                ELEMENT: "bathInterv",
+                USED_FOR: "Bathymetric interval"
+            },
+            {
+                ELEMENT: "primeMer",
+                USED_FOR: "Prime Meridian"
+            },
+            {
+                ELEMENT: "photomos",
+                USED_FOR: "Photomosaic"
+            },
+            {
+                ELEMENT: "bands",
+                USED_FOR: "Bands"
+            },
+            {
+                ELEMENT: "rectificn",
+                USED_FOR: "Rectification"
+            },
+            {
+                ELEMENT: "rollNo",
+                USED_FOR: "Roll number"
+            },
+            {
+                ELEMENT: "inst",
+                USED_FOR: "Institution"
+            },
+            {
+                ELEMENT: "sheetId",
+                USED_FOR: "Sheet ID"
+            },
+            {
+                ELEMENT: "available",
+                USED_FOR: "Available"
+            },
+            {
+                ELEMENT: "physHold",
+                USED_FOR: "Physical holdings"
+            },
+            {
+                ELEMENT: "digHold",
+                USED_FOR: "Digital holdings"
+            },
+            {
+                ELEMENT: "instCallNo",
+                USED_FOR: "Local call number"
+            },
+            {
+                ELEMENT: "recId",
+                USED_FOR: "Record identifier"
+            },
+            {
+                ELEMENT: "download",
+                USED_FOR: "Download URL"
+            },
+            {
+                ELEMENT: "websiteUrl",
+                USED_FOR: "Website URL"
+            },
+            {
+                ELEMENT: "thumbUrl",
+                USED_FOR: "Thumbnail URL"
+            },
+            {
+                ELEMENT: "iiifUrl",
+                USED_FOR: "IIIF URL"
+            },
+            {
+                ELEMENT: "fileName",
+                USED_FOR: "File name"
+            },
+            {
+                ELEMENT: "note",
+                USED_FOR: "Notes"
+            },
+        ];
+        var OIMArray = [];
+        for (var key in OIMnames) {
+
+            OIMArray.push(OIMnames[key].ELEMENT)
+        }
+
+        //Create table
+        function makeTable(rArray) {
+            var tbl = ('<table width = 100%><tr>');
+
+            //create header
+            //
+            var display = "<button class=\"collapseHeader\"><table><tr>  <th>Label</th> <th> Title</th> <th>Date Published</th><th>  </th></tr> </table></button> ";
+            var curLabel;
+            var curTitle;
+            var curDate;
+
+
+            //enclose it in a scrollable thing?? (idk how)
+            //for loop to create all the collapsible stuff
+            for (var i = 0; i < features.length; i++) {
+
+                curLabel = "";
+
+                curTitle = "";
+
+                curDate = "";
+
+                //make sure they have titles etc before adding them
+                if (features[i].properties.label) {
+                    curLabel = features[i].properties.label;
+
+                }
+                if (features[i].properties.title) {
+                    curTitle = features[i].properties.title;
+                }
+                if (features[i].properties.datePub) {
+                    curDate = features[i].properties.datePub;
+                }
+
+
+                //create title info
+                //give table elements the id of the feature they represent so we can access feature element on map
+                var str1 = "<button  type=\"button\" id=\""+ features[i].id.toString() + "\" class=\"collapsible\"><table><tr>  <th> "
+                var str2 = "</th> <th>"
+                display = display + str1 + curLabel + str2 + curTitle + "</th> <th>" + curDate + "</th><th>"
+
+                //add image link
+                if (features[i].properties.websiteUrl) {
+                    display = display + "<a href=\" " + features[i].properties.websiteUrl + "\" ><button class=\"btn-blue\">Map</button></a></th>"
+                }
+
+                display = display + "</th></tr> </table></button> "
+                var name;
+                var index;
+
+                //add info to dropdown
+                display = display + "<div class=\"content\">"
+                for (var key in features[i].properties) {
+                    var info;
+                    //search for index of key to find full name in table
+                    index = OIMArray.indexOf(key)
+                        if (index == -1) {
+                            name = key;
+                        } else {
+                            name = OIMnames[index].USED_FOR
+                        }
+
+                    //make it a hyperlink if it is the appropriate type
+                    if (key == "websiteUrl" || key == "download" || key == "physHold" || key == "iiifURL" || key == "digHold") {
+                        
+                        info = "<a href=\" " + features[i].properties[key] + "\">" + features[i].properties[key] + " </a>"
+
+                        display = display + "<span><b>" + name + ":   </b>" + info + "</span> <br>";
+                    } else {
+                        info = features[i].properties[key]
+                        display = display + "<p><b>" + name + ":   </b>" + info + "</p> ";
+                    }
+
+
+
+                }
+
+
+                display = display + "</div>"
+            }
+
+
+            return display
+        }
+
+
+
+        // document.getElementById('features').innerHTML = displayFeatures[0].properties //makeTable(displayFeatures)
+        document.getElementById('features').innerHTML = makeTable()
+
+        //add listeners
+        var coll = document.getElementsByClassName("collapsible");
+        var i;
+      
+
+        for (i = 0; i < coll.length; i++) {
+
+            //if the element is already expand it, close it. Otherwise, expand it and highlight the polygon
+            coll[i].addEventListener("click", function () {
+                this.classList.toggle("active");
+                ID = this.id;
+                var content = this.nextElementSibling;
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    map.setFeatureState({
+                        'source': 'Data Layer',
+                        'id': ID
+                    }, {
+                        hover: true
+
+                    });
+                }
+            });
+
+            //highlight polygon when mouse enters feature in table
+            coll[i].addEventListener("mouseover", function () {
+
+                ID = this.id;
+
+                map.setFeatureState({
+                    'source': 'Data Layer',
+                    'id': ID
+                }, {
+                    hover: true
+
+                });
+
+
+
+            });
+
+            //make polygon transparent again when mouse leaves feature in table, unless feature is expanded, in which case keep it highlighted
+            coll[i].addEventListener("mouseout", function () {
+
+                if (!this.nextElementSibling.style.maxHeight) {
+                    map.setFeatureState({
+                        'source': 'Data Layer',
+                        'id': ID
+                    }, {
+                        hover: false
+
+                    });
+
+                    ID = null;
+                }
+
+
+            });
+        }
+
+    });
+
+
+
+
+
+
+};
+
+// Call mapData() to initalize the map
+mapData();
+
+    </script>
+
+</body>
+</html>
+ 
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrapper">
+      <!-- <p class="text-xs text-gray-500 sm:ml-4 sm:pl-4 sm:border-l-2 sm:border-gray-200 sm:py-2 sm:mt-0 mt-4"><a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</p> -->
+      <a href="https://researchcommons.library.ubc.ca/" class="footer-link">Brought to you by UBC Library Research Commons</a>
+      <a href="https://github.com/ubc-lib-geo/openindexmap-o-matic" class="footer-link">Made with the OpenIndexMap-O-Matic</a>
+    </div>
+  </footer>
+
+</body>
+
+</html>
